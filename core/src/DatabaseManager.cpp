@@ -104,3 +104,44 @@ std::string DatabaseManager::getPasswordHash(const std::string &username) const 
     }
 }
 
+int DatabaseManager::getUserId(const std::string &username) const {
+        try {
+            SQLite::Statement query(*db, "SELECT id FROM users WHERE username = ?");
+            query.bind(1, username);
+
+            if (query.executeStep()) return query.getColumn(0).getInt();
+            else return -1;
+
+        } catch (std::exception& e) {
+            std::cerr << e.what() << std::endl;
+            return -1;
+        }
+    }
+bool DatabaseManager::createSession(int user_id, const std::string &token) {
+        try {
+            SQLite::Statement query(*db, "INSERT INTO sessions(user_id, token) VALUES (?, ?)");
+            query.bind(1, user_id);
+            query.bind(2, token);
+            query.exec();
+            return true;
+
+        }
+        catch (std::exception& e) {
+            std::cerr << e.what() << std::endl;
+            return false;
+        }
+    }
+
+int DatabaseManager::getUserIByToken(const std::string &token) {
+        try {
+            SQLite::Statement query(*db, "SELECT id FROM users WHERE token = ?");
+            query.bind(1, token);
+            if (query.executeStep()) return query.getColumn(0).getInt();
+            else return -1;
+        } catch (std::exception& e) {
+            std::cerr << e.what() << std::endl;
+            return -1;
+        }
+    }
+
+
