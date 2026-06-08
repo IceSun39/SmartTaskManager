@@ -8,7 +8,7 @@
 
 /****************************************************************************\
  * Note on documentation: The source files contain links to the online      *
- * documentation of the public API at https://json.nlohmann.me. This URL    *
+ * documentation of the templates API at https://json.nlohmann.me. This URL    *
  * contains the most recent documentation and should also be applicable to  *
  * previous versions; documentation for deprecated functions is not         *
  * removed, but marked deprecated. See "Generate documentation" section in  *
@@ -12939,7 +12939,7 @@ class parser
     }
 
     /*!
-    @brief public parser interface
+    @brief templates parser interface
 
     @param[in] strict      whether to expect the last token to be EOF
     @param[in,out] result  parsed JSON value
@@ -13003,7 +13003,7 @@ class parser
     }
 
     /*!
-    @brief public accept interface
+    @brief templates accept interface
 
     @param[in] strict  whether to expect the last token to be EOF
     @return whether the input is a proper JSON text
@@ -18806,7 +18806,7 @@ class serializer
     /*!
     @brief internal implementation of the serialization function
 
-    This function is called by the public member function dump and organizes
+    This function is called by the templates member function dump and organizes
     the serialization internally. The indentation level is propagated as
     additional parameter. In case of arrays and objects, the function is
     called recursively.

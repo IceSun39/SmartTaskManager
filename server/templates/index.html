@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Task Manager</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="container">
+    <h2 id="formTitle">Вхід</h2>
+
+    <div class="form-group">
+        <input type="text" id="username" placeholder="Логін" required>
+    </div>
+    <div class="form-group">
+        <input type="password" id="password" placeholder="Пароль" required>
+    </div>
+
+    <button id="submitBtn" onclick="handleSubmit()">Увійти</button>
+
+    <div class="switch-mode" onclick="toggleMode()">
+        Ще немає акаунту? <span style="color: #89b4fa;">Зареєструватися</span>
+    </div>
+
+    <div id="statusMessage"></div>
+</div>
+
+<script>
+    let isLoginMode = true;
+
+    // Перемикання між Входом та Реєстрацією
+    function toggleMode() {
+        isLoginMode = !isLoginMode;
+        document.getElementById('formTitle').innerText = isLoginMode ? 'Вхід' : 'Реєстрація';
+        document.getElementById('submitBtn').innerText = isLoginMode ? 'Увійти' : 'Створити акаунт';
+
+        const switchText = isLoginMode
+            ? 'Ще немає акаунту? <span style="color: #89b4fa;">Зареєструватися</span>'
+            : 'Вже є акаунт? <span style="color: #89b4fa;">Увійти</span>';
+        document.querySelector('.switch-mode').innerHTML = switchText;
+
+        showMessage('', ''); // очищаємо повідомлення
+    }
+
+    function showMessage(text, color) {
+        const msgDiv = document.getElementById('statusMessage');
+        msgDiv.innerText = text;
+        msgDiv.style.color = color;
+    }
+
+    async function handleSubmit() {
+        const user = document.getElementById('username').value;
+        const pass = document.getElementById('password').value;
+
+        if (!user || !pass) {
+            showMessage('Будь ласка, заповніть всі поля', '#f38ba8'); // червоний
+            return;
+        }
+
+        const endpoint = isLoginMode ? '/api/v1/auth/login' : '/api/v1/auth/register';
+
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username: user, password: pass })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showMessage(data.message, '#a6e3a1'); // зелений
+
+                // Якщо це був логін, зберігаємо токен у браузері
+                if (isLoginMode && data.token) {
+                    localStorage.setItem('auth_token', data.token);
+                    console.log("Токен збережено:", data.token);
+
+                    // Тут згодом можна буде робити redirect на сторінку з тасками
+                    setTimeout(() => {
+                        showMessage('Токен збережено! Готові до роботи.', '#a6e3a1');
+                    }, 1000);
+                } else if (!isLoginMode) {
+                    // Якщо успішно зареєструвалися, перекидаємо на форму входу
+                    setTimeout(toggleMode, 1500);
+                }
+            } else {
+                showMessage(data.message, '#f38ba8'); // червоний
+            }
+        } catch (error) {
+            showMessage('Помилка з\'єднання із сервером', '#f38ba8');
+        }
+    }
+</script>
+
+</body>
+</html>
