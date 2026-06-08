@@ -7,12 +7,14 @@ class DatabaseManager {
 private:
     std::unique_ptr<SQLite::Database> db;
 public:
-    DatabaseManager();
+    DatabaseManager(const std::string& db_path);
     ~DatabaseManager();
 
-    void initializeDatabase();
+    void initializeDatabase() const;
     bool createUser(std::string& username, const std::string& password_hash);
+    bool deleteUser(std::string& username);
     bool create_task(int user_id, const std::string& title, const std::string& description);
+    bool delete_task(int user_id, const std::string& title);
 };
 
 

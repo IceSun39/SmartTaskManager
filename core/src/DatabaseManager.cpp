@@ -1,5 +1,78 @@
-//
-// Created by vlad on 08.06.26.
-//
-
 #include "../include/DatabaseManager.h"
+
+#include <iostream>
+
+DatabaseManager::DatabaseManager(const std::string& db_path) {
+    db = std::make_unique<SQLite::Database>(db_path, SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
+}
+
+DatabaseManager::~DatabaseManager() = default;
+
+void DatabaseManager::initializeDatabase() const {
+    db->exec("CREATE TABLE IF NOT EXISTS users ("
+             "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+             "username VARCHAR(50) UNIQUE NOT NULL, "
+             "password_hash TEXT NOT NULL"
+             ");");
+
+    db->exec("CREATE TABLE IF NOT EXISTS tasks ("
+             "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+             "user_id INTEGER NOT NULL, "
+             "title TEXT NOT NULL, "
+             "description TEXT, "
+             "status TEXT DEFAULT 'pending', "
+             "CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
+             ");");
+}
+
+bool DatabaseManager::createUser(std::string& username, const std::string& password) {
+    try {
+        SQLite::Statement query(*db, "INSERT INTO users(username, password_hash) VALUES (?, ?)");
+        query.bind(1, username);
+        query.bind(2, password);
+        query.exec();
+        return true;
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool DatabaseManager::deleteUser(std::string& username) {
+    try {
+        SQLite::Statement query(*db, "DELETE FROM users WHERE username = ?");
+        query.bind(1, username);
+        int rowsDeleted = query.exec();
+        return rowsDeleted > 0;         // якщо видалило 1 або більше — true, якщо 0 — false
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool DatabaseManager::create_task(int user_id, const std::string& title, const std::string& description) {
+    try {
+        SQLite::Statement query(*db, "INSERT INTO tasks(user_id, title, description) VALUES (?, ?, ?)");
+        query.bind(1, user_id);
+        query.bind(2, title);
+        query.bind(3, description);
+        query.exec();
+        return true;
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool DatabaseManager::delete_task(int user_id, const std::string& title) {
+    try {
+        SQLite::Statement query(*db, "DELETE FROM tasks WHERE user_id = ? AND title = ?");
+        query.bind(1, user_id);
+        query.bind(2, title);
+        int rowsDeleted = query.exec();
+        return rowsDeleted > 0;
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        return false;
+    }
+}
