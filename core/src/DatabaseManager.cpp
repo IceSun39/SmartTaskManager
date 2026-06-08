@@ -1,6 +1,7 @@
 #include "../include/DatabaseManager.h"
 
 #include <iostream>
+#include <signal.h>
 
 DatabaseManager::DatabaseManager(const std::string& db_path) {
     db = std::make_unique<SQLite::Database>(db_path, SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
@@ -50,7 +51,7 @@ bool DatabaseManager::deleteUser(std::string& username) {
     }
 }
 
-bool DatabaseManager::create_task(int user_id, const std::string& title, const std::string& description) {
+bool DatabaseManager::createTask(int user_id, const std::string& title, const std::string& description) {
     try {
         SQLite::Statement query(*db, "INSERT INTO tasks(user_id, title, description) VALUES (?, ?, ?)");
         query.bind(1, user_id);
@@ -64,7 +65,7 @@ bool DatabaseManager::create_task(int user_id, const std::string& title, const s
     }
 }
 
-bool DatabaseManager::delete_task(int user_id, const std::string& title) {
+bool DatabaseManager::deleteTask(int user_id, const std::string& title) {
     try {
         SQLite::Statement query(*db, "DELETE FROM tasks WHERE user_id = ? AND title = ?");
         query.bind(1, user_id);
@@ -74,5 +75,19 @@ bool DatabaseManager::delete_task(int user_id, const std::string& title) {
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
         return false;
+    }
+}
+
+std::string DatabaseManager::getPasswordHash(const std::string &username) const {
+    try {
+        SQLite::Statement query(*db, "SELECT password_hash FROM users WHERE username = ?");
+        query.bind(1, username);
+
+        if (query.executeStep()) return query.getColumn(0).getString();
+        else return "";
+
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        return "";
     }
 }

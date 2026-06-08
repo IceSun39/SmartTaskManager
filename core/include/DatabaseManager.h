@@ -13,8 +13,9 @@ public:
     void initializeDatabase() const;
     bool createUser(std::string& username, const std::string& password_hash);
     bool deleteUser(std::string& username);
-    bool create_task(int user_id, const std::string& title, const std::string& description);
-    bool delete_task(int user_id, const std::string& title);
+    bool createTask(int user_id, const std::string& title, const std::string& description);
+    bool deleteTask(int user_id, const std::string& title);
+    std::string getPasswordHash(const std::string& username) const;
 };
 
 
