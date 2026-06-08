@@ -16,6 +16,9 @@ public:
     bool createTask(int user_id, const std::string& title, const std::string& description);
     bool deleteTask(int user_id, const std::string& title);
     std::string getPasswordHash(const std::string& username) const;
+    int getUserId(const std::string& username) const;
+    bool createSession(int user_id, const std::string& token);
+    int getUserIByToken(const std::string& token);
 };
 
 

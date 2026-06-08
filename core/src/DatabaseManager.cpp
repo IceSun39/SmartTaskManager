@@ -24,6 +24,12 @@ void DatabaseManager::initializeDatabase() const {
              "status TEXT DEFAULT 'pending', "
              "CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
              ");");
+    db->exec("CREATE TABLE IF NOT EXISTS sessions ("
+         "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+         "user_id INTEGER NOT NULL, "
+         "token TEXT UNIQUE NOT NULL, "
+         "CONSTRAINT fk_session_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
+         ");");
 }
 
 bool DatabaseManager::createUser(std::string& username, const std::string& password) {
@@ -80,7 +86,7 @@ bool DatabaseManager::deleteTask(int user_id, const std::string& title) {
 
 std::string DatabaseManager::getPasswordHash(const std::string &username) const {
     try {
-        SQLite::Statement query(*db, "SELECT password_hash FROM users WHERE username = ?");
+        SQLite::Statement query(*db, "SELECT password_hash FROM sessions WHERE username = ?");
         query.bind(1, username);
 
         if (query.executeStep()) return query.getColumn(0).getString();
@@ -90,4 +96,6 @@ std::string DatabaseManager::getPasswordHash(const std::string &username) const 
         std::cerr << e.what() << std::endl;
         return "";
     }
+}
+
 }
