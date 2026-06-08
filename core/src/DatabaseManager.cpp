@@ -9,6 +9,7 @@ DatabaseManager::DatabaseManager(const std::string& db_path) {
 
 DatabaseManager::~DatabaseManager() = default;
 
+// Заповнення бд
 void DatabaseManager::initializeDatabase() const {
     db->exec("CREATE TABLE IF NOT EXISTS users ("
              "id INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -32,6 +33,7 @@ void DatabaseManager::initializeDatabase() const {
          ");");
 }
 
+// Створення користувача
 bool DatabaseManager::createUser(std::string& username, const std::string& password) {
     try {
         SQLite::Statement query(*db, "INSERT INTO users(username, password_hash) VALUES (?, ?)");
@@ -45,6 +47,7 @@ bool DatabaseManager::createUser(std::string& username, const std::string& passw
     }
 }
 
+//Видалення користувача
 bool DatabaseManager::deleteUser(std::string& username) {
     try {
         SQLite::Statement query(*db, "DELETE FROM users WHERE username = ?");
@@ -57,6 +60,7 @@ bool DatabaseManager::deleteUser(std::string& username) {
     }
 }
 
+// Створення задачі
 bool DatabaseManager::createTask(int user_id, const std::string& title, const std::string& description) {
     try {
         SQLite::Statement query(*db, "INSERT INTO tasks(user_id, title, description) VALUES (?, ?, ?)");
@@ -71,6 +75,7 @@ bool DatabaseManager::createTask(int user_id, const std::string& title, const st
     }
 }
 
+// Видалення задачі
 bool DatabaseManager::deleteTask(int user_id, const std::string& title) {
     try {
         SQLite::Statement query(*db, "DELETE FROM tasks WHERE user_id = ? AND title = ?");
@@ -84,9 +89,10 @@ bool DatabaseManager::deleteTask(int user_id, const std::string& title) {
     }
 }
 
+// Отримання хешу пароля користувача
 std::string DatabaseManager::getPasswordHash(const std::string &username) const {
     try {
-        SQLite::Statement query(*db, "SELECT password_hash FROM sessions WHERE username = ?");
+        SQLite::Statement query(*db, "SELECT password_hash FROM users WHERE username = ?");
         query.bind(1, username);
 
         if (query.executeStep()) return query.getColumn(0).getString();
@@ -98,4 +104,3 @@ std::string DatabaseManager::getPasswordHash(const std::string &username) const 
     }
 }
 
-}
