@@ -37,9 +37,9 @@ int authenticateUser(const crow::request& req, const std::shared_ptr<DatabaseMan
     return userId;
 }
 
-crow::response makeJsonError(int statusCode, const std::string& message) {
+crow::response makeJsonMessage(int statusCode, const std::string& status, const std::string& message) {
     json j_error;
-    j_error["status"] = "Error";
+    j_error["status"] = status;
     j_error["message"] = message;
 
     crow::response response(j_error.dump());
@@ -59,7 +59,7 @@ int main() {
         return page.render();
     });
 
-// Реєстрація
+    // Реєстрація
     CROW_ROUTE(app, "/api/v1/auth/register").methods(crow::HTTPMethod::POST)([&db_manager](const crow::request& req ) {
         try {
             json j = json::parse(req.body);
@@ -94,7 +94,7 @@ int main() {
             std::string hashedPassword = db_manager->getPasswordHash(username);
 
             if (hashedPassword.empty() || !PasswordHasher::verifyPassword(password, hashedPassword)) {
-                return makeJsonError(401, "Invalid username or password");
+                return makeJsonMessage(401, "Error", "Invalid username or password");
             }
 
             int userId = db_manager->getUserId(username);
@@ -102,16 +102,10 @@ int main() {
 
             db_manager->createSession(userId, token);
 
-            json j_success;
-            j_success["status"] = "Success";
-            j_success["message"] = "User logged in";
-            j_success["token"] = token;
-            crow::response response(j_success.dump());
-            response.code = 200;
-            return response;
+            return makeJsonMessage(200, "Success", "User logged in");
 
         } catch (const std::exception& e) {
-            return makeJsonError(400, "Invalid JSON");
+            return makeJsonMessage(400, "Error", "Invalid JSON");
         }
     });
 
@@ -126,50 +120,71 @@ int main() {
 
             db_manager->createTask(userId, title, description);
 
-            json j_success;
-            j_success["status"] = "Success";
-            j_success["message"] = "Task created";
-            crow::response response(j_success.dump());
-            response.code = 201;
-            return response;
+            return makeJsonMessage(201, "Success", "Task created");
 
         } catch (const std::invalid_argument& e) {
             // Помилка парсингу токена
-            return makeJsonError(401, e.what());
+            return makeJsonMessage(401, "Error", e.what());
         } catch (const std::runtime_error& e) {
             // Помилка бази (неіснуючий юзер/токен)
-            return makeJsonError(401, e.what());
+            return makeJsonMessage(401, "Error", e.what());
         } catch (const std::exception& e) {
             // Помилка JSON
-            return makeJsonError(400, "Invalid JSON");
+            return makeJsonMessage(400, "Error", "Invalid JSON");
         }
     });
 
     // Отримати масив тасок
     CROW_ROUTE(app, "/api/v1/tasks").methods(crow::HTTPMethod::GET)([&db_manager](const crow::request& req) {
         try {
-            // 1. Авторизація (якщо впаде, керування перейде в catch)
+            // Авторизація
             int userId = authenticateUser(req, db_manager);
 
-            // 2. Отримання даних
+            // Отримання даних
             json allTasks = db_manager->getAllTasksForUserId(userId);
 
-            // 3. Успішна відповідь
+            // Успішна відповідь
             crow::response response(allTasks.dump());
             response.code = 200;
             return response;
 
         } catch (const std::invalid_argument& e) {
             // Ловимо помилки формату токена
-            return makeJsonError(401, e.what());
+            return makeJsonMessage(401, "Error", e.what());
 
         } catch (const std::runtime_error& e) {
             // Ловимо помилки неіснуючого юзера
-            return makeJsonError(401, e.what());
+            return makeJsonMessage(401, "Error", e.what());
 
         } catch (const std::exception& e) {
             // Глобальний відлов непередбачуваних помилок (наприклад, краш БД)
-            return makeJsonError(500, "Internal Server Error");
+            return makeJsonMessage(500, "Error", "Internal Server Error");
+        }
+    });
+
+    // Видалити таску
+    CROW_ROUTE(app, "/api/v1/tasks").methods(crow::HTTPMethod::DELETE)([&db_manager](const crow::request& req) {
+        try {
+           int userId = authenticateUser(req, db_manager);
+
+            std::string title = json::parse(req.body)["title"].get<std::string>();
+            bool isDeleted = db_manager->deleteTask(userId, title);
+
+            if (isDeleted) {
+                return makeJsonMessage(200, "Success", "Task deleted");
+            }
+            else {
+                return makeJsonMessage(400, "Error", "Cannot delete task");
+            }
+        }catch (const std::invalid_argument& e) {
+            // Ловимо помилки формату токена
+            return makeJsonMessage(401, "Error", e.what());
+        }catch (const std::runtime_error& e) {
+            // Ловимо помилки неіснуючого юзера
+            return makeJsonMessage(401, "Error", e.what());
+        }catch (const std::exception& e) {
+            // Глобальний відлов непередбачуваних помилок (наприклад, краш БД)
+            return makeJsonMessage(500, "Error","Internal Server Error");
         }
     });
 
