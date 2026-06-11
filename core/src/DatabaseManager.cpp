@@ -144,4 +144,26 @@ int DatabaseManager::getUserIdByToken(const std::string &token) {
         }
     }
 
+json DatabaseManager::getAllTasksForUserId(int user_id) const {
+    try {
+        json result = json::array();
+
+        SQLite::Statement query(*db, "SELECT title, description FROM tasks WHERE user_id = ?");
+        query.bind(1, user_id);
+
+        while (query.executeStep()) {
+            json task;
+            task["title"] = query.getColumn(0).getString();
+            task["description"] = query.getColumn(1).getString();
+
+            result.push_back(task);
+        }
+
+        return result;
+    } catch (std::exception& e) {
+        std::cerr << "Database error: " << e.what() << std::endl;
+        return json::array();
+    }
+}
+
 

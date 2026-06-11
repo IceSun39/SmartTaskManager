@@ -2,6 +2,9 @@
 #define SMARTTASKMANAGER_DATABASEMANAGER_H
 
 #include "SQLiteCpp/SQLiteCpp.h"
+#include "/home/vlad/CLionProjects/SmartTaskManager/json.hpp"
+
+using json = nlohmann::json;
 
 class DatabaseManager {
 private:
@@ -19,6 +22,7 @@ public:
     int getUserId(const std::string& username) const;
     bool createSession(int user_id, const std::string& token);
     int getUserIdByToken(const std::string& token);
+    json getAllTasksForUserId(int user_id) const;
 };
 
 
