@@ -184,7 +184,7 @@ int main() {
             return makeJsonMessage(401, "Error", e.what());
         }catch (const std::exception& e) {
             // Глобальний відлов непередбачуваних помилок (наприклад, краш БД)
-            return makeJsonMessage(500, "Error","Internal Server Error");
+            return makeJsonMessage(500, "Error","Internal Server Error") ;
         }
     });
 

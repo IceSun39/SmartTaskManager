@@ -5,43 +5,83 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Task Manager</title>
     <link rel="stylesheet" href="/static/style.css">
+    <style>
+        /* Додаткові стилі для дашборду */
+        .hidden { display: none !important; }
+        .dashboard-container { width: 500px; }
+        .task-list { margin-top: 20px; max-height: 400px; overflow-y: auto; }
+        .task-item {
+            background-color: #181825;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #89b4fa;
+        }
+        .task-content h4 { margin: 0 0 5px 0; color: #cdd6f4; }
+        .task-content p { margin: 0; font-size: 0.9em; color: #a6adc8; }
+        .btn-delete {
+            background-color: #f38ba8;
+            color: #11111b;
+            width: auto;
+            padding: 8px 12px;
+            margin-top: 0;
+        }
+        .btn-delete:hover { background-color: #eba0ac; }
+        .btn-logout { background-color: #45475a; margin-bottom: 20px;}
+        .btn-logout:hover { background-color: #585b70; }
+        .header-flex { display: flex; justify-content: space-between; align-items: center; }
+    </style>
 </head>
 <body>
 
-<div class="container">
+<div class="container" id="authContainer">
     <h2 id="formTitle">Вхід</h2>
-
     <div class="form-group">
         <input type="text" id="username" placeholder="Логін" required>
     </div>
     <div class="form-group">
         <input type="password" id="password" placeholder="Пароль" required>
     </div>
-
     <button id="submitBtn" onclick="handleSubmit()">Увійти</button>
-
     <div class="switch-mode" onclick="toggleMode()">
         Ще немає акаунту? <span style="color: #89b4fa;">Зареєструватися</span>
     </div>
-
     <div id="statusMessage"></div>
 </div>
 
+<div class="container dashboard-container hidden" id="dashboardContainer">
+    <div class="header-flex">
+        <h2>Мої завдання</h2>
+        <button class="btn-logout" onclick="logout()">Вийти</button>
+    </div>
+
+    <div class="form-group">
+        <input type="text" id="taskTitle" placeholder="Назва завдання" required>
+    </div>
+    <div class="form-group">
+        <input type="text" id="taskDesc" placeholder="Опис завдання">
+    </div>
+    <button onclick="createTask()">Додати завдання</button>
+
+    <div class="task-list" id="taskList">
+    </div>
+</div>
+
 <script>
+    // --- АВТОРИЗАЦІЯ ---
     let isLoginMode = true;
 
-    // Перемикання між Входом та Реєстрацією
     function toggleMode() {
         isLoginMode = !isLoginMode;
         document.getElementById('formTitle').innerText = isLoginMode ? 'Вхід' : 'Реєстрація';
         document.getElementById('submitBtn').innerText = isLoginMode ? 'Увійти' : 'Створити акаунт';
-
-        const switchText = isLoginMode
+        document.querySelector('.switch-mode').innerHTML = isLoginMode
             ? 'Ще немає акаунту? <span style="color: #89b4fa;">Зареєструватися</span>'
             : 'Вже є акаунт? <span style="color: #89b4fa;">Увійти</span>';
-        document.querySelector('.switch-mode').innerHTML = switchText;
-
-        showMessage('', ''); // очищаємо повідомлення
+        showMessage('', '');
     }
 
     function showMessage(text, color) {
@@ -54,47 +94,154 @@
         const user = document.getElementById('username').value;
         const pass = document.getElementById('password').value;
 
-        if (!user || !pass) {
-            showMessage('Будь ласка, заповніть всі поля', '#f38ba8'); // червоний
-            return;
-        }
+        if (!user || !pass) return showMessage('Заповніть всі поля', '#f38ba8');
 
         const endpoint = isLoginMode ? '/api/v1/auth/login' : '/api/v1/auth/register';
 
         try {
             const response = await fetch(endpoint, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: user, password: pass })
             });
-
             const data = await response.json();
 
             if (response.ok) {
-                showMessage(data.message, '#a6e3a1'); // зелений
-
-                // Якщо це був логін, зберігаємо токен у браузері
                 if (isLoginMode && data.token) {
                     localStorage.setItem('auth_token', data.token);
-                    console.log("Токен збережено:", data.token);
-
-                    // Тут згодом можна буде робити redirect на сторінку з тасками
-                    setTimeout(() => {
-                        showMessage('Токен збережено! Готові до роботи.', '#a6e3a1');
-                    }, 1000);
+                    checkAuth(); // Перемикаємо UI
                 } else if (!isLoginMode) {
-                    // Якщо успішно зареєструвалися, перекидаємо на форму входу
-                    setTimeout(toggleMode, 1500);
+                    showMessage('Реєстрація успішна!', '#a6e3a1');
+                    setTimeout(toggleMode, 1000);
                 }
             } else {
-                showMessage(data.message, '#f38ba8'); // червоний
+                showMessage(data.message, '#f38ba8');
             }
         } catch (error) {
-            showMessage('Помилка з\'єднання із сервером', '#f38ba8');
+            showMessage('Помилка сервера', '#f38ba8');
         }
     }
+
+    function logout() {
+        localStorage.removeItem('auth_token');
+        document.getElementById('username').value = '';
+        document.getElementById('password').value = '';
+        checkAuth();
+    }
+
+    function checkAuth() {
+        const token = localStorage.getItem('auth_token');
+        const authDiv = document.getElementById('authContainer');
+        const dashDiv = document.getElementById('dashboardContainer');
+
+        if (token) {
+            authDiv.classList.add('hidden');
+            dashDiv.classList.remove('hidden');
+            fetchTasks(); // Завантажуємо таски
+        } else {
+            authDiv.classList.remove('hidden');
+            dashDiv.classList.add('hidden');
+        }
+    }
+
+    // --- РОБОТА З ТАСКАМИ ---
+    function getHeaders() {
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('auth_token')
+        };
+    }
+
+    async function fetchTasks() {
+        try {
+            const response = await fetch('/api/v1/tasks', { headers: getHeaders() });
+            if (response.status === 401) { logout(); return; } // Якщо токен протух - викидаємо на вхід
+
+            const tasks = await response.json();
+            renderTasks(tasks);
+        } catch (error) {
+            console.error('Помилка завантаження завдань:', error);
+        }
+    }
+
+    async function createTask() {
+        const titleInput = document.getElementById('taskTitle');
+        const descInput = document.getElementById('taskDesc');
+        const title = titleInput.value.trim();
+        const desc = descInput.value.trim();
+
+        if (!title) return alert("Назва завдання обов'язкова!");
+
+        try {
+            const response = await fetch('/api/v1/tasks', {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify({ title: title, description: desc })
+            });
+
+            if (response.ok) {
+                titleInput.value = '';
+                descInput.value = '';
+                fetchTasks(); // Оновлюємо список
+            } else {
+                const data = await response.json();
+                alert(data.message);
+            }
+        } catch (error) {
+            console.error('Помилка створення:', error);
+        }
+    }
+
+    async function deleteTask(title) {
+        if (!confirm(`Видалити завдання "${title}"?`)) return;
+
+        try {
+            const response = await fetch('/api/v1/tasks', {
+                method: 'DELETE',
+                headers: getHeaders(),
+                body: JSON.stringify({ title: title })
+            });
+
+            if (response.ok) {
+                fetchTasks(); // Оновлюємо список
+            } else {
+                const data = await response.json();
+                alert(data.message);
+            }
+        } catch (error) {
+            console.error('Помилка видалення:', error);
+        }
+    }
+
+    function renderTasks(tasks) {
+        const list = document.getElementById('taskList');
+        list.innerHTML = '';
+
+        if (!tasks || tasks.length === 0) {
+            list.innerHTML = '<p style="text-align: center; color: #a6adc8;">Немає активних завдань</p>';
+            return;
+        }
+
+        tasks.forEach(task => {
+            const item = document.createElement('div');
+            item.className = 'task-item';
+
+            // Екранування лапок для безпечної передачі у функцію
+            const safeTitle = task.title.replace(/'/g, "\\'");
+
+            item.innerHTML = `
+                <div class="task-content">
+                    <h4>${task.title}</h4>
+                    <p>${task.description || ''}</p>
+                </div>
+                <button class="btn-delete" onclick="deleteTask('${safeTitle}')">✕</button>
+            `;
+            list.appendChild(item);
+        });
+    }
+
+    // Запускаємо перевірку при старті
+    checkAuth();
 </script>
 
 </body>
