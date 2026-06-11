@@ -18,7 +18,7 @@ public:
     std::string getPasswordHash(const std::string& username) const;
     int getUserId(const std::string& username) const;
     bool createSession(int user_id, const std::string& token);
-    int getUserIByToken(const std::string& token);
+    int getUserIdByToken(const std::string& token);
 };
 
 

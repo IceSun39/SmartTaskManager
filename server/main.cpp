@@ -108,5 +108,49 @@ int main() {
         }
     });
 
+    CROW_ROUTE(app, "/api/v1/tasks").methods((crow::HTTPMethod::POST)([&db_manager](const crow::request& req ) {
+        try {
+            std::string token = req.get_header_value("Authorization");
+
+            // Якщо токен некоректний
+            if (token.empty() && !token.starts_with("Bearer ")) {
+                throw std::invalid_argument("Bearer not found");
+            }
+
+            token = token.substr(7);
+            int isUserId = db_manager->getUserIdByToken(token);
+
+            // Якщо такого юзера не існує
+            if (isUserId == -1) {
+                json j_error;
+                j_error["status"] = "Error";
+                j_error["message"] = "User not logged in";
+                crow::response response(j_error.dump());
+                response.code = 401;
+                return response;
+            }
+
+
+            json j = json::parse(req.body);
+            std::string title = j["title"].get<std::string>();
+            std::string description = j["description"].get<std::string>();
+
+            db_manager->createTask(title, description);
+            json j_success;
+            j_success["status"] = "Success";
+            j_success["message"] = "Task created";
+            crow::response response(j_success.dump());
+            response.code = 201;
+            return response;
+        }catch (std::exception& e) {
+            json j_error;
+            j_error["status"] = "Error";
+            j_error["message"] = "Invalid JSON";
+            crow::response response(j_error.dump());
+            response.code = 400;
+            return response;
+        }
+    });
+
     app.port(8080).multithreaded().run();
 }

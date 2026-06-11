@@ -132,7 +132,7 @@ bool DatabaseManager::createSession(int user_id, const std::string &token) {
         }
     }
 
-int DatabaseManager::getUserIByToken(const std::string &token) {
+int DatabaseManager::getUserIdByToken(const std::string &token) {
         try {
             SQLite::Statement query(*db, "SELECT id FROM users WHERE token = ?");
             query.bind(1, token);
