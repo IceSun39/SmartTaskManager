@@ -17,8 +17,8 @@ public:
     bool createUser(std::string& username, const std::string& password_hash);
     bool deleteUser(std::string& username);
     bool createTask(int user_id, const std::string& title, const std::string& description);
-    bool deleteTask(int user_id, const std::string& title);
-    bool updateTaskStatus(int user_id, const std::string& title, const std::string& status);
+    bool deleteTask(int user_id, int task_id);
+    bool updateTaskStatus(int user_id, int task_id, const std::string& status);
     std::string getPasswordHash(const std::string& username) const;
     int getUserId(const std::string& username) const;
     bool createSession(int user_id, const std::string& token);
