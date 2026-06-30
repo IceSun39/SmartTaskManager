@@ -22,7 +22,7 @@ public:
     std::string getPasswordHash(const std::string& username) const;
     int getUserId(const std::string& username) const;
     bool createSession(int user_id, const std::string& token);
-    bool deleteSession(int user_id, const std::string& token);
+    bool deleteSession(const std::string& token);
     int getUserIdByToken(const std::string& token);
     json getAllTasksForUserId(int user_id) const;
 };

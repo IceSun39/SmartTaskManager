@@ -148,10 +148,10 @@ bool DatabaseManager::createSession(int user_id, const std::string &token) {
         }
     }
 
-bool DatabaseManager::deleteSession(int user_id, const std::string &token) {
+bool DatabaseManager::deleteSession(const std::string &token) {
     try {
         SQLite::Statement query(*db, "DELETE FROM sessions WHERE token = ?");
-        query.bind(1, user_id);
+        query.bind(1, token);
         int deletedRows = query.exec();
         return deletedRows > 0;
     }catch (std::exception& e) {
@@ -178,8 +178,7 @@ int DatabaseManager::getUserIdByToken(const std::string &token) {
 json DatabaseManager::getAllTasksForUserId(int user_id) const {
     try {
         json result = json::array();
-
-        SQLite::Statement query(*db, "SELECT title, description, status FROM tasks WHERE user_id = ? AND status = 'pending' ");
+        SQLite::Statement query(*db, "SELECT title, description, status FROM tasks WHERE user_id = ?");
         query.bind(1, user_id);
 
         while (query.executeStep()) {
