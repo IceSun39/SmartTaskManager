@@ -116,6 +116,35 @@ int main() {
         }
     });
 
+    CROW_ROUTE(app, "/api/v1/auth/logout").methods(crow::HTTPMethod::POST)([&db_manager](const crow::request& req ) {
+        try {
+            std::string auth_header = req.get_header_value("Authorization");
+
+            // Захищаємось від порожнього заголовка або неправильного формату
+            if (auth_header.empty() || !auth_header.starts_with("Bearer ")) {
+                return makeJsonMessage(401, "Error", "Invalid or missing token");
+            }
+
+            std::string token = auth_header.substr(7);
+
+            if (db_manager->deleteSession(token)) {
+                return makeJsonMessage(200, "Success", "Sesion closed");
+            }
+            else {
+                return makeJsonMessage(400, "Error", "Cannot close session");
+            }
+        } catch (const std::invalid_argument& e) {
+            // Помилка парсингу токена
+            return makeJsonMessage(401, "Error", e.what());
+        } catch (const std::runtime_error& e) {
+            // Помилка бази (неіснуючий юзер/токен)
+            return makeJsonMessage(401, "Error", e.what());
+        } catch (const std::exception& e) {
+            // Помилка JSON
+            return makeJsonMessage(400, "Error", "Invalid JSON");
+        }
+    });
+
     // Створити таску
     CROW_ROUTE(app, "/api/v1/tasks").methods(crow::HTTPMethod::POST)([&db_manager](const crow::request& req ) {
         try {
@@ -202,9 +231,9 @@ int main() {
 
             json j = json::parse(req.body);
             std::string title = j["title"].get<std::string>();
-            std::string description = j["description"].get<std::string>();
+            std::string status = j["status"].get<std::string>();
 
-            if (db_manager->updateTaskStatus(userId, title, description)) {
+            if (db_manager->updateTaskStatus(userId, title, status)) {
                 return makeJsonMessage(200, "Success", "Task updated");
             }
             else {
@@ -218,6 +247,8 @@ int main() {
             return makeJsonMessage(400, "Error", "Invalid JSON");
         }
     });
+
+
 
     app.port(8080).multithreaded().run();
 }
