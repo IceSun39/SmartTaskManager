@@ -191,51 +191,34 @@
             console.error('Помилка створення:', error);
         }
     }
+    
+    async function toggleStatus(id, isChecked) {
+        const newStatus = isChecked ? 'completed' : 'pending';
+        try {
+            const response = await fetch('/api/v1/tasks/status', {
+                method: 'PATCH',
+                headers: getHeaders(),
+                body: JSON.stringify({ id: id, status: newStatus }) // Передаємо id
+            });
+            if (response.ok) fetchTasks();
+        } catch (error) { console.error('Помилка оновлення статусу:', error); }
+    }
 
-    async function deleteTask(title) {
-        if (!confirm(`Видалити завдання "${title}"?`)) return;
-
+    async function deleteTask(id) {
+        if (!confirm(`Видалити це завдання?`)) return;
         try {
             const response = await fetch('/api/v1/tasks', {
                 method: 'DELETE',
                 headers: getHeaders(),
-                body: JSON.stringify({ title: title })
+                body: JSON.stringify({ id: id }) // Передаємо id
             });
-
-            if (response.ok) {
-                fetchTasks(); // Оновлюємо список
-            } else {
-                const data = await response.json();
-                alert(data.message);
-            }
-        } catch (error) {
-            console.error('Помилка видалення:', error);
-        }
-    }
-
-    async function toggleStatus(title, isChecked) {
-        const newStatus = isChecked ? 'completed' : 'pending';
-        try {
-            const response = await fetch('/api/v1/tasks/status', {
-                method: 'PATCH', // або PUT, залежно від того, що ти обереш на бекенді
-                headers: getHeaders(),
-                body: JSON.stringify({ title: title, status: newStatus })
-            });
-
-            if (response.ok) {
-                fetchTasks(); // Перезавантажуємо список, щоб таска закреслилась
-            } else {
-                console.error('Помилка сервера під час оновлення статусу');
-            }
-        } catch (error) {
-            console.error('Помилка мережі:', error);
-        }
+            if (response.ok) fetchTasks();
+        } catch (error) { console.error('Помилка видалення:', error); }
     }
 
     function renderTasks(tasks) {
         const list = document.getElementById('taskList');
         list.innerHTML = '';
-
         if (!tasks || tasks.length === 0) {
             list.innerHTML = '<p style="text-align: center; color: #a6adc8;">Немає активних завдань</p>';
             return;
@@ -245,9 +228,6 @@
             const item = document.createElement('div');
             item.className = 'task-item';
 
-            const safeTitle = task.title.replace(/'/g, "\\'");
-
-            // Перевіряємо статус, який прийде від твого бекенду
             const isCompleted = task.status === 'completed';
             const textStyle = isCompleted ? 'text-decoration: line-through; opacity: 0.5;' : '';
 
@@ -255,13 +235,13 @@
                 <div style="display: flex; align-items: center; gap: 15px;">
                     <input type="checkbox" style="width: 20px; height: 20px; cursor: pointer;"
                            ${isCompleted ? 'checked' : ''}
-                           onchange="toggleStatus('${safeTitle}', this.checked)">
+                           onchange="toggleStatus(${task.id}, this.checked)">
                     <div class="task-content" style="${textStyle}">
                         <h4>${task.title}</h4>
                         <p>${task.description || ''}</p>
                     </div>
                 </div>
-                <button class="btn-delete" onclick="deleteTask('${safeTitle}')">✕</button>
+                <button class="btn-delete" onclick="deleteTask(${task.id})">✕</button>
             `;
             list.appendChild(item);
         });

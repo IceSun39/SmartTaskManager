@@ -35,35 +35,35 @@ inline void setupTaskRoutes(crow::SimpleApp& app, std::shared_ptr<DatabaseManage
 
     // Видалити таску
     CROW_ROUTE(app, "/api/v1/tasks").methods(crow::HTTPMethod::DELETE)([db_manager](const crow::request& req) {
-        try {
-            int userId = authenticateUser(req, db_manager);
-            std::string title = json::parse(req.body)["title"].get<std::string>();
+            try {
+                int userId = authenticateUser(req, db_manager);
+                int taskId = json::parse(req.body)["id"].get<int>(); // Читаємо ID
 
-            if (db_manager->deleteTask(userId, title)) {
-                return makeJsonMessage(200, "Success", "Task deleted");
-            } else {
-                return makeJsonMessage(400, "Error", "Cannot delete task");
+                if (db_manager->deleteTask(userId, taskId)) {
+                    return makeJsonMessage(200, "Success", "Task deleted");
+                } else {
+                    return makeJsonMessage(400, "Error", "Cannot delete task");
+                }
+            } catch (const std::exception& e) {
+                return makeJsonMessage(400, "Error", e.what());
             }
-        } catch (const std::exception& e) {
-            return makeJsonMessage(400, "Error", e.what());
-        }
-    });
+        });
 
     // Оновити статус таски
     CROW_ROUTE(app, "/api/v1/tasks/status").methods(crow::HTTPMethod::PATCH)([db_manager](const crow::request& req) {
-        try {
-            int userId = authenticateUser(req, db_manager);
-            json j = json::parse(req.body);
-            std::string title = j["title"].get<std::string>();
-            std::string status = j["status"].get<std::string>();
+            try {
+                int userId = authenticateUser(req, db_manager);
+                json j = json::parse(req.body);
+                int taskId = j["id"].get<int>(); // Читаємо ID
+                std::string status = j["status"].get<std::string>();
 
-            if (db_manager->updateTaskStatus(userId, title, status)) {
-                return makeJsonMessage(200, "Success", "Task updated");
-            } else {
-                return makeJsonMessage(400, "Error", "Cannot update task");
+                if (db_manager->updateTaskStatus(userId, taskId, status)) {
+                    return makeJsonMessage(200, "Success", "Task updated");
+                } else {
+                    return makeJsonMessage(400, "Error", "Cannot update task");
+                }
+            } catch (const std::exception& e) {
+                return makeJsonMessage(400, "Error", e.what());
             }
-        } catch (const std::exception& e) {
-            return makeJsonMessage(400, "Error", e.what());
-        }
-    });
+        });
 }
