@@ -208,7 +208,7 @@ int main() {
                 return makeJsonMessage(200, "Success", "Task updated");
             }
             else {
-                return makeJsonMessage(400, "Error", e.what());
+                return makeJsonMessage(400, "Error", "Cannor update task");
             }
         } catch (const std::invalid_argument& e) {
             return makeJsonMessage(401, "Error", e.what());
