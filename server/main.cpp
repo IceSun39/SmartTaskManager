@@ -200,10 +200,22 @@ int main() {
         try {
             int userId = authenticateUser(req, db_manager);
 
-            
+            json j = json::parse(req.body);
+            std::string title = j["title"].get<std::string>();
+            std::string description = j["description"].get<std::string>();
 
-        } catch (const std:exception& e) {
-
+            if (db_manager->updateTaskStatus(userId, title, description)) {
+                return makeJsonMessage(200, "Success", "Task updated");
+            }
+            else {
+                return makeJsonMessage(400, "Error", e.what());
+            }
+        } catch (const std::invalid_argument& e) {
+            return makeJsonMessage(401, "Error", e.what());
+        } catch (const std::runtime_error& e) {
+            return makeJsonMessage(401, "Error", e.what());
+        } catch (const std::exception& e) {
+            return makeJsonMessage(400, "Error", "Invalid JSON");
         }
     });
 
