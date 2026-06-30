@@ -1,6 +1,6 @@
 #include "crow.h"
 #include "DatabaseManager.h"
-#include "/home/vlad/CLionProjects/SmartTaskManager/json.hpp"
+#include "../../json.hpp"
 #include "PasswordHasher.h"
 #include <memory>
 #include <random>
@@ -70,7 +70,7 @@ int main() {
             bool isCreated = db_manager->createUser(username, hashedPassword);
 
             if (!isCreated) {
-                return makeJsonError(400, "User already exists");
+                return makeJsonMessage(400, "Error","User already exists");
             }
 
             json j_success;
@@ -81,7 +81,7 @@ int main() {
             return response;
 
         } catch (const std::exception& e) {
-            return makeJsonError(400, "Invalid JSON");
+            return makeJsonMessage(400, "Error", "Invalid JSON");
         }
     });
 
