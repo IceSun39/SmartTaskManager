@@ -102,7 +102,14 @@ int main() {
 
             db_manager->createSession(userId, token);
 
-            return makeJsonMessage(200, "Success", "User logged in");
+            json j_success;
+            j_success["status"] = "Success";
+            j_success["message"] = "User logged in";
+            j_success["token"] = token;
+
+            crow::response response(j_success.dump());
+            response.code = 200;
+            return response;
 
         } catch (const std::exception& e) {
             return makeJsonMessage(400, "Error", "Invalid JSON");
