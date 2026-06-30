@@ -2,7 +2,7 @@
 #define SMARTTASKMANAGER_DATABASEMANAGER_H
 
 #include "SQLiteCpp/SQLiteCpp.h"
-#include "/home/vlad/CLionProjects/SmartTaskManager/json.hpp"
+#include "../../json.hpp"
 
 using json = nlohmann::json;
 
@@ -18,9 +18,11 @@ public:
     bool deleteUser(std::string& username);
     bool createTask(int user_id, const std::string& title, const std::string& description);
     bool deleteTask(int user_id, const std::string& title);
+    bool updateTaskStatus(int user_id, const std::string& title, const std::string& status);
     std::string getPasswordHash(const std::string& username) const;
     int getUserId(const std::string& username) const;
     bool createSession(int user_id, const std::string& token);
+    bool deleteSession(int user_id, const std::string& token);
     int getUserIdByToken(const std::string& token);
     json getAllTasksForUserId(int user_id) const;
 };

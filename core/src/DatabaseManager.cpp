@@ -89,6 +89,22 @@ bool DatabaseManager::deleteTask(int user_id, const std::string& title) {
     }
 }
 
+bool DatabaseManager::updateTaskStatus(int user_id, const std::string &title, const std::string &status) {
+    try {
+        SQLite::Statement query(*db, "UPDATE tasks SET status = ? WHERE user_id = ? AND title = ?");
+        query.bind(1, status);
+        query.bind(2, user_id);
+        query.bind(3, title);
+        int rowsUpdated = query.exec();
+        return rowsUpdated > 0;
+    }catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        return false;
+    }
+}
+
+\
+
 // Отримання хешу пароля користувача
 std::string DatabaseManager::getPasswordHash(const std::string &username) const {
     try {
@@ -132,29 +148,45 @@ bool DatabaseManager::createSession(int user_id, const std::string &token) {
         }
     }
 
+bool DatabaseManager::deleteSession(int user_id, const std::string &token) {
+    try {
+        SQLite::Statement query(*db, "DELETE FROM sessions WHERE token = ?");
+        query.bind(1, user_id);
+        int deletedRows = query.exec();
+        return deletedRows > 0;
+    }catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        return false;
+    }
+}
+
 int DatabaseManager::getUserIdByToken(const std::string &token) {
-        try {
-            SQLite::Statement query(*db, "SELECT id FROM users WHERE token = ?");
-            query.bind(1, token);
-            if (query.executeStep()) return query.getColumn(0).getInt();
-            else return -1;
-        } catch (std::exception& e) {
-            std::cerr << e.what() << std::endl;
+    try {
+        SQLite::Statement query(*db, "SELECT user_id FROM sessions WHERE token = ?");
+        query.bind(1, token);
+        if (query.executeStep()) {
+            return query.getColumn(0).getInt();
+        } else {
             return -1;
         }
+    } catch (std::exception& e) {
+        std::cerr << "Session Check Error: " << e.what() << std::endl;
+        return -1;
     }
+}
 
 json DatabaseManager::getAllTasksForUserId(int user_id) const {
     try {
         json result = json::array();
 
-        SQLite::Statement query(*db, "SELECT title, description FROM tasks WHERE user_id = ?");
+        SQLite::Statement query(*db, "SELECT title, description, status FROM tasks WHERE user_id = ? AND status = 'pending' ");
         query.bind(1, user_id);
 
         while (query.executeStep()) {
             json task;
             task["title"] = query.getColumn(0).getString();
             task["description"] = query.getColumn(1).getString();
+            task["status"] = query.getColumn(2).getString();
 
             result.push_back(task);
         }
