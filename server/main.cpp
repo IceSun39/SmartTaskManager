@@ -195,5 +195,17 @@ int main() {
         }
     });
 
+    // Зміна статусу задачі
+    CROW_ROUTE(app, "/api/v1/tasks/status").methods(crow::HTTPMethod::PATCH)([&db_manager](const crow::request& req) {
+        try {
+            int userId = authenticateUser(req, db_manager);
+
+            
+
+        } catch (const std:exception& e) {
+
+        }
+    });
+
     app.port(8080).multithreaded().run();
 }
